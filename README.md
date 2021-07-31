@@ -34,7 +34,7 @@ To start Flask application do this:
 _Linux_
 
 ```
-export FLASK_APP=globomatics_shop.py
+export FLASK_APP=app.py
 export FLASK_ENV=development
 flask run
 ```
@@ -42,7 +42,7 @@ flask run
 _Windows_ (Command Line)
 
 ```
-set FLASK_APP=globomatics_shop.py
+set FLASK_APP=app.py
 set FLASK_ENV=development
 flask run
 ```
@@ -50,7 +50,7 @@ flask run
 _Windows_ (PowerShell)
 
 ```
-$Env:FLASK_APP='globomatics_shop.py'
+$Env:FLASK_APP='app.py'
 $Env:FLASK_ENV='development'
 flask run
 ```
