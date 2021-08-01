@@ -2,6 +2,10 @@ from flask import Flask, render_template, request, redirect, url_for, g, flash
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, SubmitField
 import sqlite3
+from dotenv import load_dotenv
+from livereload import Server
+
+load_dotenv()
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secretkey"
@@ -88,7 +92,8 @@ def close_connection(exception):
 
 
 def main():
-    app.run(debug=False)
+    server = Server(app.wsgi_app)
+    server.serve(debug=False)
 
 
 if __name__ == '__main__':
