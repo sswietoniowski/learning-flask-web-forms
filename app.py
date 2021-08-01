@@ -23,14 +23,15 @@ def home():
     conn = get_db()
     c = conn.cursor()
 
-    items_from_db = c.execute("""SELECT
+    items_from_db = c.execute("""
+        SELECT
         i.id, i.title, i.price, i.description, i.image, c.name, s.name
         FROM 
         items AS i 
         INNER JOIN categories AS c on i.category_id = c.id
         INNER JOIN subcategories AS s ON i.subcategory_id = s.id
         ORDER BY i.id DESC
-	    """)
+    """)
 
     items = []
     for row in items_from_db:
@@ -55,21 +56,19 @@ def new_item():
     form = NewItemForm()
 
     if request.method == "POST":
-        # Process the form data
-        print("Form data:")
-        print(f"Title: {request.form.get('title')}, Description: {request.form.get('description')}")
-        c.execute("""INSERT INTO items 
+        c.execute("""
+            INSERT INTO items 
             (title, description, price, image, category_id, subcategory_id)
-            VALUES (?, ?, ?, ?, ?, ?)""",
-                  (
-                      form.title.data,
-                      form.description.data,
-                      float(form.price.data),
-                      "",
-                      1,
-                      1
-                  )
-                  )
+            VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+              form.title.data,
+              form.description.data,
+              float(form.price.data),
+              "",
+              1,
+              1
+            )
+        )
         conn.commit()
         flash(f"Item {request.form.get('title')} has been successfully submitted.", "success")
         return redirect(url_for('home'))
@@ -85,7 +84,7 @@ def get_db():
 
 
 @app.teardown_appcontext
-def close_connection(exception):
+def close_connection():
     db = getattr(g, "_database", None)
     if db is not None:
         db.close()
