@@ -1,8 +1,17 @@
 from flask import Flask, render_template, request, redirect, url_for, g, flash
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField, SubmitField
 import sqlite3
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secretkey"
+
+
+class NewItemForm(FlaskForm):
+    title = StringField("Title")
+    price = StringField("Price")
+    description = TextAreaField("Description")
+    submit = SubmitField("Submit")
 
 
 @app.route("/")
@@ -39,6 +48,7 @@ def home():
 def new_item():
     conn = get_db()
     c = conn.cursor()
+    form = NewItemForm()
 
     if request.method == "POST":
         # Process the form data
@@ -48,19 +58,19 @@ def new_item():
             (title, description, price, image, category_id, subcategory_id)
             VALUES (?, ?, ?, ?, ?, ?)""",
                   (
-                      request.form.get("title"),
-                      request.form.get("description"),
-                      float(request.form.get("price")),
+                      form.title.data,
+                      form.description.data,
+                      float(form.price.data),
                       "",
                       1,
                       1
                   )
                   )
         conn.commit()
-        flash(f"Item { request.form.get('title') } has been successfully submitted.", "success")
+        flash(f"Item {request.form.get('title')} has been successfully submitted.", "success")
         return redirect(url_for('home'))
 
-    return render_template("new_item.html")
+    return render_template("new_item.html", form=form)
 
 
 def get_db():
