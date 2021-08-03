@@ -58,7 +58,40 @@ def item(item_id):
         item = {}
 
     if item:
-        return render_template("item.html", item=item)
+        deleteItemForm = DeleteItemForm()
+
+        return render_template("item.html", item=item, deleteItemForm=deleteItemForm)
+
+    return redirect(url_for("home"))
+
+
+class DeleteItemForm(FlaskForm):
+    submit = SubmitField("Delete item")
+
+
+@app.route("/item/<int:item_id>/delete", methods=["POST"])
+def delete_item(item_id):
+    conn = get_db()
+    c = conn.cursor()
+
+    item_from_db = c.execute("SELECT i.id, i.title FROM items AS i WHERE id = ?", (item_id, ))
+    row = c.fetchone()
+
+    try:
+        item = {
+            "id": row[0],
+            "title": row[1]
+        }
+    except:
+        item = {}
+
+    if item:
+        c.execute("DELETE FROM items WHERE id = ?", (item_id,))
+        conn.commit()
+
+        flash(f"Item {item['title']} has been successfully deleted.", "success")
+    else:
+        flash("This item does not exist.", "danger")
 
     return redirect(url_for("home"))
 
