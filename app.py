@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, g, flash
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SubmitField, SelectField
+from wtforms import StringField, TextAreaField, SubmitField, SelectField, DecimalField
+from wtforms.validators import InputRequired, DataRequired, Length
 import sqlite3
 from dotenv import load_dotenv
 from livereload import Server
@@ -12,11 +13,20 @@ app.config["SECRET_KEY"] = "secretkey"
 
 
 class NewItemForm(FlaskForm):
-    title = StringField("Title")
-    price = StringField("Price")
+    title = StringField("Title",
+                        validators=[InputRequired("Input is required!"),
+                                    DataRequired("Data is required!"),
+                                    Length(min=5, max=20,
+                                           message="Input must be between 5 and 20 characters long.")])
+
+    price = DecimalField("Price")
     category = SelectField("Category", coerce=int)
     subcategory = SelectField("Subcategory", coerce=int)
-    description = TextAreaField("Description")
+    description = TextAreaField("Description",
+                                validators=[InputRequired("Input is required!"),
+                                            DataRequired("Data is required!"),
+                                            Length(min=5, max=40,
+                                                   message="Input must be between 5 and 20 characters long.")])
     submit = SubmitField("Submit")
 
 
@@ -61,7 +71,7 @@ def new_item():
     categories = c.fetchall()
     form.category.choices = categories
 
-    c.execute("""SELECT id, name FROM subcategories WHERE category_id = ?""", (1, ))
+    c.execute("""SELECT id, name FROM subcategories WHERE category_id = ?""", (1,))
     subcategories = c.fetchall()
     form.subcategory.choices = subcategories
 
@@ -71,14 +81,14 @@ def new_item():
             (title, description, price, image, category_id, subcategory_id)
             VALUES (?, ?, ?, ?, ?, ?)
             """, (
-              form.title.data,
-              form.description.data,
-              float(form.price.data),
-              "",
-              form.category.data,
-              form.subcategory.data
-            )
+            form.title.data,
+            form.description.data,
+            float(form.price.data),
+            "",
+            form.category.data,
+            form.subcategory.data
         )
+                  )
         conn.commit()
         flash(f"Item {request.form.get('title')} has been successfully submitted.", "success")
         return redirect(url_for('home'))
