@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, g, flash
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SubmitField
+from wtforms import StringField, TextAreaField, SubmitField, SelectField
 import sqlite3
 from dotenv import load_dotenv
 from livereload import Server
@@ -14,6 +14,8 @@ app.config["SECRET_KEY"] = "secretkey"
 class NewItemForm(FlaskForm):
     title = StringField("Title")
     price = StringField("Price")
+    category = SelectField("Category")
+    subcategory = SelectField("Subcategory")
     description = TextAreaField("Description")
     submit = SubmitField("Submit")
 
@@ -55,6 +57,14 @@ def new_item():
     c = conn.cursor()
     form = NewItemForm()
 
+    c.execute("SELECT id, name FROM categories")
+    categories = c.fetchall()
+    form.category.choices = categories
+
+    c.execute("""SELECT id, name FROM subcategories WHERE category_id = ?""", (1, ))
+    subcategories = c.fetchall()
+    form.subcategory.choices = subcategories
+
     if request.method == "POST":
         c.execute("""
             INSERT INTO items 
@@ -65,8 +75,8 @@ def new_item():
               form.description.data,
               float(form.price.data),
               "",
-              1,
-              1
+              form.category.data,
+              form.subcategory.data
             )
         )
         conn.commit()
@@ -84,7 +94,7 @@ def get_db():
 
 
 @app.teardown_appcontext
-def close_connection():
+def close_connection(exception):
     db = getattr(g, "_database", None)
     if db is not None:
         db.close()
