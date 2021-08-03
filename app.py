@@ -14,8 +14,8 @@ app.config["SECRET_KEY"] = "secretkey"
 class NewItemForm(FlaskForm):
     title = StringField("Title")
     price = StringField("Price")
-    category = SelectField("Category")
-    subcategory = SelectField("Subcategory")
+    category = SelectField("Category", coerce=int)
+    subcategory = SelectField("Subcategory", coerce=int)
     description = TextAreaField("Description")
     submit = SubmitField("Submit")
 
@@ -65,7 +65,7 @@ def new_item():
     subcategories = c.fetchall()
     form.subcategory.choices = subcategories
 
-    if request.method == "POST":
+    if form.validate_on_submit():
         c.execute("""
             INSERT INTO items 
             (title, description, price, image, category_id, subcategory_id)
@@ -82,6 +82,9 @@ def new_item():
         conn.commit()
         flash(f"Item {request.form.get('title')} has been successfully submitted.", "success")
         return redirect(url_for('home'))
+
+    if form.errors:
+        flash(f"{form.errors}", "danger")
 
     return render_template("new_item.html", form=form)
 
