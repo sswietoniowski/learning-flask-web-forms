@@ -3,7 +3,7 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileRequired
 from wtforms import StringField, TextAreaField, SubmitField, SelectField, DecimalField, FileField
 from wtforms.validators import InputRequired, DataRequired, Length, ValidationError
-from werkzeug.utils import secure_filename, escape
+from werkzeug.utils import secure_filename, escape, unescape
 import sqlite3
 from dotenv import load_dotenv
 from livereload import Server
@@ -194,8 +194,8 @@ def edit_item(item_id):
             flash(f"Item {item['title']} has been successfully updated.", "success")
             return redirect(url_for("item", item_id=item_id))
 
-        form.title.data = item["title"]
-        form.description.data = item["description"]
+        form.title.data = unescape(item["title"])
+        form.description.data = unescape(item["description"])
         form.price.data = item["price"]
 
         if form.errors:
