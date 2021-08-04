@@ -40,27 +40,54 @@ class ItemForm(FlaskForm):
     image = FileField("Image",
                       validators=[FileAllowed(app.config["ALLOWED_IMAGE_EXTENSIONS"], "Images only!")])
 
-def belongs_to_category(message):
-    message = message
 
-    def _belongs_to_category(form, field):
+class BelongsToOtherFieldOption:
+    def __init__(self, table, belongs_to, foreign_key=None, message=None):
+        if not table:
+            raise AttributeError("""
+                BelongsToOtherFieldOption validator needs the table parameter.
+            """)
+        if not belongs_to:
+            raise AttributeError("""
+                BelongsToOtherFieldOption validator needs the belongs_to parameter.
+            """)
+
+        self.table = table
+        self.belongs_to = belongs_to
+
+        if not foreign_key:
+            foreign_key = belongs_to + "_id"
+        if not message:
+            message = "Choosen option is not valid."
+        else:
+            self.message = message
+            self.foreign_key = foreign_key
+
+    def __call__(self, form, field):
         conn = get_db()
         c = conn.cursor()
-        c.execute("""
-            SELECT COUNT(*) FROM subcategories AS s WHERE s.id = ? AND s.category_id = ?
-        """, (field.data, form.category.data))
+        try:
+            c.execute(f"""
+                SELECT COUNT(*) FROM {self.table} AS t WHERE t.id = ? AND t.{self.foreign_key} = ?
+            """, (field.data, getattr(form, self.belongs_to).data))
+        except Exception as e:
+            raise AttributeError("""
+                Passed parameters are not correct. {}
+            """.format(e))
         exists = c.fetchone()[0]
         if not exists:
-            raise ValidationError(message)
-
-    return _belongs_to_category
+            raise ValidationError(self.message)
 
 
 class NewItemForm(ItemForm):
     category = SelectField("Category", coerce=int)
     subcategory = SelectField("Subcategory",
                               coerce=int,
-                              validators=[belongs_to_category("Choice does not belong to category.")])
+                              validators=[BelongsToOtherFieldOption(
+                                  table="subcategories",
+                                  belongs_to="category",
+                                  message="Subcategory does not belong to that category."
+                              )])
     submit = SubmitField("Submit")
 
 
