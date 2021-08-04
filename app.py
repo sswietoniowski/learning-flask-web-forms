@@ -2,7 +2,7 @@ from flask import Flask, send_from_directory, render_template, request, redirect
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileRequired
 from wtforms import StringField, TextAreaField, SubmitField, SelectField, DecimalField, FileField
-from wtforms.validators import InputRequired, DataRequired, Length
+from wtforms.validators import InputRequired, DataRequired, Length, ValidationError
 from werkzeug.utils import secure_filename
 import sqlite3
 from dotenv import load_dotenv
@@ -45,6 +45,16 @@ class NewItemForm(ItemForm):
     category = SelectField("Category", coerce=int)
     subcategory = SelectField("Subcategory", coerce=int)
     submit = SubmitField("Submit")
+
+    def validate_subcategory(form, field):
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("""
+            SELECT COUNT(*) FROM subcategories AS s WHERE s.id = ? AND s.category_id = ?
+        """, (field.data, form.category.data))
+        exists = c.fetchone()[0]
+        if not exists:
+            raise ValidationError("Choice does not belong to that category.")
 
 
 class EditItemForm(ItemForm):
