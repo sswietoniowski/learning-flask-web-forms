@@ -41,20 +41,21 @@ class ItemForm(FlaskForm):
                       validators=[FileAllowed(app.config["ALLOWED_IMAGE_EXTENSIONS"], "Images only!")])
 
 
+def belongs_to_category(form, field):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("""
+        SELECT COUNT(*) FROM subcategories AS s WHERE s.id = ? AND s.category_id = ?
+    """, (field.data, form.category.data))
+    exists = c.fetchone()[0]
+    if not exists:
+        raise ValidationError("Choice does not belong to that category.")
+
+
 class NewItemForm(ItemForm):
     category = SelectField("Category", coerce=int)
-    subcategory = SelectField("Subcategory", coerce=int)
+    subcategory = SelectField("Subcategory", coerce=int, validators=[belongs_to_category])
     submit = SubmitField("Submit")
-
-    def validate_subcategory(form, field):
-        conn = get_db()
-        c = conn.cursor()
-        c.execute("""
-            SELECT COUNT(*) FROM subcategories AS s WHERE s.id = ? AND s.category_id = ?
-        """, (field.data, form.category.data))
-        exists = c.fetchone()[0]
-        if not exists:
-            raise ValidationError("Choice does not belong to that category.")
 
 
 class EditItemForm(ItemForm):
