@@ -1,5 +1,5 @@
 from flask import Flask, send_from_directory, render_template, request, redirect, url_for, g, flash
-from flask_wtf import FlaskForm
+from flask_wtf import FlaskForm, RecaptchaField
 from flask_wtf.file import FileAllowed, FileRequired
 from wtforms import StringField, TextAreaField, SubmitField, SelectField, DecimalField, FileField
 from wtforms.validators import InputRequired, DataRequired, Length, ValidationError
@@ -23,6 +23,8 @@ app.config["ALLOWED_IMAGE_EXTENSIONS"] = ["jpeg", "jpg", "png"]
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 app.config["IMAGE_UPLOADS"] = os.path.join(basedir, "uploads")
 
+app.config["RECAPTCHA_PUBLIC_KEY"] = "6LfHKN0bAAAAAKBqd_1uZoHCJsR5ffs0D0RphMz8"
+app.config["RECAPTCHA_PRIVATE_KEY"] = "6LfHKN0bAAAAABJsM-OsWQuPXnSUOppPKD3XgHIg"
 
 class ItemForm(FlaskForm):
     title = StringField("Title",
@@ -39,6 +41,7 @@ class ItemForm(FlaskForm):
                                                    message="Input must be between 5 and 20 characters long.")])
     image = FileField("Image",
                       validators=[FileAllowed(app.config["ALLOWED_IMAGE_EXTENSIONS"], "Images only!")])
+    recaptcha = RecaptchaField()
 
 
 class BelongsToOtherFieldOption:
