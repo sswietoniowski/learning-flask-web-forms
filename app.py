@@ -3,7 +3,7 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileRequired
 from wtforms import StringField, TextAreaField, SubmitField, SelectField, DecimalField, FileField
 from wtforms.validators import InputRequired, DataRequired, Length, ValidationError
-from werkzeug.utils import secure_filename
+from werkzeug.utils import secure_filename, escape
 import sqlite3
 from dotenv import load_dotenv
 from livereload import Server
@@ -182,9 +182,9 @@ def edit_item(item_id):
                 SET title = ?, description = ?, price = ?, image = ?
                 WHERE id = ?
                 """, (
-                    form.title.data,
-                    form.description.data,
-                    float(form.price.data),
+                    escape(form.title.data),
+                    escape(form.description.data),
+                    float(escape(form.price.data)),
                     filename,
                     item_id
                 )
@@ -199,7 +199,7 @@ def edit_item(item_id):
         form.price.data = item["price"]
 
         if form.errors:
-            flash(f"{ format.errors }", "danger")
+            flash(f"{ form.errors }", "danger")
 
         return render_template("edit_item.html", item=item, form=form)
 
@@ -266,7 +266,7 @@ def home():
 
         if form.title.data.strip():
             filter_queries.append("i.title LIKE ?")
-            parameters.append("%" + form.title.data + "%")
+            parameters.append("%" + escape(form.title.data) + "%")
 
         if form.category.data:
             filter_queries.append("i.category_id = ?")
@@ -345,9 +345,9 @@ def new_item():
             (title, description, price, image, category_id, subcategory_id)
             VALUES (?, ?, ?, ?, ?, ?)
             """, (
-            form.title.data,
-            form.description.data,
-            float(form.price.data),
+            escape(form.title.data),
+            escape(form.description.data),
+            float(escape(form.price.data)),
             filename,
             form.category.data,
             form.subcategory.data
