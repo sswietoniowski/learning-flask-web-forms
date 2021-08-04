@@ -10,22 +10,19 @@
                         {{ form.title.label }}
                         {{ form.title(class='form-control') }}
                     </div>
-                    <br>
                     <div class="form-group">
                         {{ form.price.label }}
                         {{ form.price(class='form-control') }}
                     </div>
-                    <br>
                     <div class="form-group">
                         {{ form.category.label }}
                         {{ form.category(class='form-control') }}
                     </div>
-                    <br>
                     <div class="form-group">
                         {{ form.subcategory.label }}
                         {{ form.subcategory(class='form-control') }}
                     </div>
-                    <br>
+                    <hr>
                     {{ form.submit(class='btn btn-primary form-control') }}
                 </form>
             </div>
@@ -39,7 +36,7 @@
                             <div class="embed-responsive embed-responsive-16by9">
                                 <a href="#">
                                     <img class="card-img-top embed-responsive-item"
-                                         src="{{ url_for('static', filename='images/placeholder.png') }}"
+                                         src="{% if item.image %}{{ url_for('uploads', filename=item.image) }}{% else %}{{ url_for('static', filename='images/placeholder.png') }}{% endif %}"
                                          alt="Image">
                                 </a>
                             </div>

@@ -1,15 +1,27 @@
-from flask import Flask, render_template, request, redirect, url_for, g, flash
+from flask import Flask, send_from_directory, render_template, request, redirect, url_for, g, flash
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SubmitField, SelectField, DecimalField
+from flask_wtf.file import FileAllowed, FileRequired
+from wtforms import StringField, TextAreaField, SubmitField, SelectField, DecimalField, FileField
 from wtforms.validators import InputRequired, DataRequired, Length
+from werkzeug.utils import secure_filename
 import sqlite3
 from dotenv import load_dotenv
 from livereload import Server
+import os
+from os.path import exists
+import datetime
+from secrets import token_hex
+
+
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 load_dotenv()
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secretkey"
+app.config["ALLOWED_IMAGE_EXTENSIONS"] = ["jpeg", "jpg", "png"]
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
+app.config["IMAGE_UPLOADS"] = os.path.join(basedir, "uploads")
 
 
 class ItemForm(FlaskForm):
@@ -25,6 +37,8 @@ class ItemForm(FlaskForm):
                                             DataRequired("Data is required!"),
                                             Length(min=5, max=40,
                                                    message="Input must be between 5 and 20 characters long.")])
+    image = FileField("Image",
+                      validators=[FileAllowed(app.config["ALLOWED_IMAGE_EXTENSIONS"], "Images only!")])
 
 
 class NewItemForm(ItemForm):
@@ -109,14 +123,25 @@ def edit_item(item_id):
     if item:
         form = EditItemForm()
         if form.validate_on_submit():
+            if form.image.data:
+                filename = save_image_upload(form.image)
+                if item.get("image") and exists(os.path.join(app.config["IMAGE_UPLOADS"], item["image"])):
+                    os.remove(os.path.join(app.config["IMAGE_UPLOADS"], item["image"]))
+            else:
+                if item.get("image"):
+                    filename = item.get("image")
+                else:
+                    filename = ""
+
             c.execute("""
                 UPDATE items
-                SET title = ?, description = ?, price = ?
+                SET title = ?, description = ?, price = ?, image = ?
                 WHERE id = ?
                 """, (
                     form.title.data,
                     form.description.data,
                     float(form.price.data),
+                    filename,
                     item_id
                 )
             )
@@ -142,18 +167,21 @@ def delete_item(item_id):
     conn = get_db()
     c = conn.cursor()
 
-    item_from_db = c.execute("SELECT i.id, i.title FROM items AS i WHERE id = ?", (item_id, ))
+    item_from_db = c.execute("SELECT i.id, i.title, i.image FROM items AS i WHERE id = ?", (item_id, ))
     row = c.fetchone()
 
     try:
         item = {
             "id": row[0],
-            "title": row[1]
+            "title": row[1],
+            "image": row[2]
         }
     except:
         item = {}
 
     if item:
+        if item.get("image") and exists(os.path.join(app.config["IMAGE_UPLOADS"], item["image"])):
+            os.remove(os.path.join(app.config["IMAGE_UPLOADS"], item["image"]))
         c.execute("DELETE FROM items WHERE id = ?", (item_id,))
         conn.commit()
 
@@ -236,6 +264,21 @@ def home():
     return render_template('home.html', items=items, form=form)
 
 
+@app.route("/uploads/<filename>")
+def uploads(filename):
+    return send_from_directory(app.config["IMAGE_UPLOADS"], filename)
+
+
+def save_image_upload(image):
+    format = "%Y%m%dT%H%M%S"
+    now = datetime.datetime.utcnow().strftime(format)
+    random_string = token_hex(2)
+    filename = random_string + "_" + now + "_" + image.data.filename
+    filename = secure_filename(filename)
+    image.data.save(os.path.join(app.config["IMAGE_UPLOADS"], filename))
+    return filename
+
+
 @app.route("/item/new", methods=["GET", "POST"])
 def new_item():
     conn = get_db()
@@ -250,7 +293,9 @@ def new_item():
     subcategories = c.fetchall()
     form.subcategory.choices = subcategories
 
-    if form.validate_on_submit():
+    if form.validate_on_submit() and form.image.validate(form, extra_validators=(FileRequired(),)):
+        filename = save_image_upload(form.image)
+
         c.execute("""
             INSERT INTO items 
             (title, description, price, image, category_id, subcategory_id)
@@ -259,7 +304,7 @@ def new_item():
             form.title.data,
             form.description.data,
             float(form.price.data),
-            "",
+            filename,
             form.category.data,
             form.subcategory.data
         )
