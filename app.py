@@ -51,6 +51,10 @@ class PriceInput(Input):
             </div>""" % self.html_params(name=field.name, **kwargs))
 
 
+class PriceField(DecimalField):
+    widget = PriceInput()
+
+
 class ItemForm(FlaskForm):
     title = StringField("Title",
                         validators=[InputRequired("Input is required!"),
@@ -58,7 +62,7 @@ class ItemForm(FlaskForm):
                                     Length(min=5, max=20,
                                            message="Input must be between 5 and 20 characters long.")])
 
-    price = DecimalField("Price", widget=PriceInput())
+    price = PriceField("Price")
     description = TextAreaField("Description",
                                 validators=[InputRequired("Input is required!"),
                                             DataRequired("Data is required!"),
