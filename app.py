@@ -1,4 +1,5 @@
-from flask import Flask, send_from_directory, render_template, request, redirect, url_for, g, flash
+from flask import (Flask, send_from_directory, render_template, request,
+                   redirect, url_for, g, flash, jsonify)
 from flask_wtf import FlaskForm, RecaptchaField
 from flask_wtf.file import FileAllowed, FileRequired
 from markupsafe import Markup
@@ -137,6 +138,20 @@ class FilterForm(FlaskForm):
     category = SelectField("Category", coerce=int)
     subcategory = SelectField("Subcategory", coerce=int)
     submit = SubmitField("Filter")
+
+
+@app.route("/category/<int:category_id>")
+def category(category_id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("""
+        SELECT s.id, s.name
+        FROM subcategories AS s
+        WHERE s.category_id = ?
+    """, (category_id, ))
+    subcategories = c.fetchall()
+
+    return jsonify(subcategories=subcategories)
 
 
 @app.route("/item/<int:item_id>")
@@ -362,7 +377,7 @@ def new_item():
     categories = c.fetchall()
     form.category.choices = categories
 
-    c.execute("""SELECT id, name FROM subcategories WHERE category_id = ?""", (1,))
+    c.execute("""SELECT id, name FROM subcategories""")
     subcategories = c.fetchall()
     form.subcategory.choices = subcategories
 
