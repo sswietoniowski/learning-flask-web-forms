@@ -26,6 +26,8 @@ app.config["IMAGE_UPLOADS"] = os.path.join(basedir, "uploads")
 app.config["RECAPTCHA_PUBLIC_KEY"] = "6LfHKN0bAAAAAKBqd_1uZoHCJsR5ffs0D0RphMz8"
 app.config["RECAPTCHA_PRIVATE_KEY"] = "6LfHKN0bAAAAABJsM-OsWQuPXnSUOppPKD3XgHIg"
 
+app.config["TESTING"] = True
+
 class ItemForm(FlaskForm):
     title = StringField("Title",
                         validators=[InputRequired("Input is required!"),
@@ -41,7 +43,6 @@ class ItemForm(FlaskForm):
                                                    message="Input must be between 5 and 20 characters long.")])
     image = FileField("Image",
                       validators=[FileAllowed(app.config["ALLOWED_IMAGE_EXTENSIONS"], "Images only!")])
-    recaptcha = RecaptchaField()
 
 
 class BelongsToOtherFieldOption:
@@ -91,6 +92,7 @@ class NewItemForm(ItemForm):
                                   belongs_to="category",
                                   message="Subcategory does not belong to that category."
                               )])
+    recaptcha = RecaptchaField()
     submit = SubmitField("Submit")
 
 
