@@ -3,7 +3,8 @@ from flask import (Flask, send_from_directory, render_template, request,
 from flask_wtf import FlaskForm, RecaptchaField
 from flask_wtf.file import FileAllowed, FileRequired
 from markupsafe import Markup
-from wtforms import StringField, TextAreaField, SubmitField, SelectField, DecimalField, FileField
+from wtforms import (StringField, TextAreaField, SubmitField,
+                     SelectField, DecimalField, FileField, HiddenField)
 from wtforms.validators import InputRequired, DataRequired, Length, ValidationError
 from wtforms.widgets import Input
 from werkzeug.utils import secure_filename, escape, unescape
@@ -140,6 +141,13 @@ class FilterForm(FlaskForm):
     submit = SubmitField("Filter")
 
 
+class NewCommentForm(FlaskForm):
+    content = TextAreaField("Comment", validators=[InputRequired("Input is required."),
+                                                   DataRequired("Data is required.")])
+    item_id = HiddenField(validators=[DataRequired()])
+    submit = SubmitField("Submit")
+
+
 @app.route("/category/<int:category_id>")
 def category(category_id):
     conn = get_db()
@@ -182,9 +190,25 @@ def item(item_id):
         item = {}
 
     if item:
+        comments_from_db = c.execute("""
+            SELECT c.content 
+            FROM comments AS c
+            WHERE c.item_id = ?
+            ORDER BY c.id DESC            
+        """, (item_id, ))
+        comments = []
+        for row in comments_from_db:
+            comment = {
+                "content": row[0]
+            }
+            comments.append(comment)
+
+        new_comment_form = NewCommentForm()
+        new_comment_form.item_id.data = item_id
         delete_item_form = DeleteItemForm()
 
-        return render_template("item.html", item=item, delete_item_form=delete_item_form)
+        return render_template("item.html", item=item, delete_item_form=delete_item_form,
+                               comments=comments, new_comment_form=new_comment_form)
 
     return redirect(url_for("home"))
 
@@ -278,6 +302,31 @@ def delete_item(item_id):
         flash("This item does not exist.", "danger")
 
     return redirect(url_for("home"))
+
+
+@app.route("/comment/new", methods=["POST"])
+def new_comment():
+    conn = get_db()
+    c = conn.cursor()
+    form = NewCommentForm()
+
+    try:
+        is_ajax = int(request.form["ajax"])
+    except:
+        is_ajax = 0
+
+    if form.validate_on_submit():
+        c.execute("INSERT INTO comments (content, item_id) VALUES (?, ?)",
+                  (escape(form.content.data), form.item_id.data))
+        conn.commit()
+
+        if is_ajax:
+            return render_template("_comment.html", content=form.content.data)
+
+    if is_ajax:
+        return "Content is required.", 400
+
+    return redirect(url_for("item", item_id=form.item_id.data))
 
 
 @app.route("/")
