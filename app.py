@@ -1,8 +1,10 @@
 from flask import Flask, send_from_directory, render_template, request, redirect, url_for, g, flash
 from flask_wtf import FlaskForm, RecaptchaField
 from flask_wtf.file import FileAllowed, FileRequired
+from markupsafe import Markup
 from wtforms import StringField, TextAreaField, SubmitField, SelectField, DecimalField, FileField
 from wtforms.validators import InputRequired, DataRequired, Length, ValidationError
+from wtforms.widgets import Input
 from werkzeug.utils import secure_filename, escape, unescape
 import sqlite3
 from dotenv import load_dotenv
@@ -23,10 +25,31 @@ app.config["ALLOWED_IMAGE_EXTENSIONS"] = ["jpeg", "jpg", "png"]
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 app.config["IMAGE_UPLOADS"] = os.path.join(basedir, "uploads")
 
+app.config["TESTING"] = True
+
 app.config["RECAPTCHA_PUBLIC_KEY"] = "6LfHKN0bAAAAAKBqd_1uZoHCJsR5ffs0D0RphMz8"
 app.config["RECAPTCHA_PRIVATE_KEY"] = "6LfHKN0bAAAAABJsM-OsWQuPXnSUOppPKD3XgHIg"
 
-app.config["TESTING"] = True
+
+class PriceInput(Input):
+    input_type = "number"
+
+    def __call__(self, field, **kwargs):
+        kwargs.setdefault("id", field.id)
+        kwargs.setdefault("type", self.input_type)
+        kwargs.setdefault("step", "0.01")
+        if "value" not in kwargs:
+            kwargs["value"] = field._value()
+        if "required" not in kwargs and "required" in getattr(field, "flags", []):
+            kwargs["required"] = True
+        return Markup("""
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">$</span>
+                </div>
+                <input %s>
+            </div>""" % self.html_params(name=field.name, **kwargs))
+
 
 class ItemForm(FlaskForm):
     title = StringField("Title",
@@ -35,7 +58,7 @@ class ItemForm(FlaskForm):
                                     Length(min=5, max=20,
                                            message="Input must be between 5 and 20 characters long.")])
 
-    price = DecimalField("Price")
+    price = DecimalField("Price", widget=PriceInput())
     description = TextAreaField("Description",
                                 validators=[InputRequired("Input is required!"),
                                             DataRequired("Data is required!"),
