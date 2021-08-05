@@ -8,6 +8,16 @@
         <h1>Add New Item</h1><hr>
         <form method="POST" action="{{ url_for('new_item') }}" enctype="multipart/form-data">
             {{ form.hidden_tag() }}
+            {% if form.errors %}
+                <div class="alert alert-danger">
+                    {% for field in form.errors %}
+                        <b>{{ field | capitalize }} field has following errors:</b><br>
+                        {% for error in form.errors[field] %}
+                            {{ error }}<br>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            {% endif %}
             <div class="form-group">
                 {{ form.title.label }}
                 {{ form.title(class="form-control") }}

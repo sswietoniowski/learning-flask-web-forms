@@ -230,9 +230,6 @@ def edit_item(item_id):
         form.description.data = unescape(item["description"])
         form.price.data = item["price"]
 
-        if form.errors:
-            flash(f"{ form.errors }", "danger")
-
         return render_template("edit_item.html", item=item, form=form)
 
     return redirect(url_for("home"))
@@ -388,9 +385,6 @@ def new_item():
         conn.commit()
         flash(f"Item {request.form.get('title')} has been successfully submitted.", "success")
         return redirect(url_for('home'))
-
-    if form.errors:
-        flash(f"{form.errors}", "danger")
 
     return render_template("new_item.html", form=form)
 
