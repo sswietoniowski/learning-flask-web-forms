@@ -353,6 +353,11 @@ def home():
         INNER JOIN subcategories AS s ON i.subcategory_id = s.id    
     """
 
+    try:
+        is_ajax = int(request.args["ajax"])
+    except:
+        is_ajax = 0
+
     if form.validate():
         filter_queries = []
         parameters = []
@@ -398,6 +403,8 @@ def home():
         }
         items.append(item)
 
+    if is_ajax:
+        return render_template("_items.html", items=items)
     return render_template('home.html', items=items, form=form)
 
 
