@@ -29,8 +29,8 @@ app.config["IMAGE_UPLOADS"] = os.path.join(basedir, "uploads")
 
 app.config["TESTING"] = True
 
-app.config["RECAPTCHA_PUBLIC_KEY"] = "6LfHKN0bAAAAAKBqd_1uZoHCJsR5ffs0D0RphMz8"
-app.config["RECAPTCHA_PRIVATE_KEY"] = "6LfHKN0bAAAAABJsM-OsWQuPXnSUOppPKD3XgHIg"
+app.config["RECAPTCHA_PUBLIC_KEY"] = "NOT_REAL_PUBLIC_KEY"
+app.config["RECAPTCHA_PRIVATE_KEY"] = "NOT_REAL_PRIVATE_KEY"
 
 
 class PriceInput(Input):
